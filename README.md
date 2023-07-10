@@ -1,6 +1,6 @@
 # localtasks
 
-Google Cloud Tasks Queue substitute for local
+Google Cloud Tasks Queue substitute in local
 
 - **Reliable**: All tasks will be guaranteed to be executed at least once (very few repetitions).
 - **Simple**: Just need one Redis server. (You can also select clusters)

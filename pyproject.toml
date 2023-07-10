@@ -1,7 +1,7 @@
 [project]
 name = "localtasks"
 version = "0.1.0"
-description = "Google Cloud Tasks Queue substitute for local"
+description = "Google Cloud Tasks Queue substitute in local"
 authors = [
     {name = "abersheeran", email = "me@abersheeran.com"},
 ]
