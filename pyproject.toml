@@ -10,7 +10,7 @@ dependencies = [
     "kui>=1.5.3",
     "redis>=4.6.0",
     "pydantic-settings>=2.0.0",
-    "runweb[reload,uvicorn]>=0.4.0",
+    "runweb[reload,uvicorn]>=0.4.1",
     "loguru>=0.7.0",
 ]
 requires-python = ">=3.11"

@@ -279,7 +279,7 @@ summary = "An extremely fast Python linter, written in Rust."
 
 [[package]]
 name = "runweb"
-version = "0.4.0"
+version = "0.4.1"
 requires_python = ">=3.7"
 summary = "Run web server with one command."
 dependencies = [
@@ -288,14 +288,14 @@ dependencies = [
 
 [[package]]
 name = "runweb"
-version = "0.4.0"
+version = "0.4.1"
 extras = ["reload", "uvicorn"]
 requires_python = ">=3.7"
 summary = "Run web server with one command."
 dependencies = [
     "httptools",
     "hupper>=1.12",
-    "runweb==0.4.0",
+    "runweb==0.4.1",
     "uvicorn",
     "uvloop; sys_platform != \"win32\" and sys_platform != \"cygwin\" and platform_python_implementation != \"PyPy\"",
     "wsproto",
@@ -348,7 +348,7 @@ dependencies = [
 lock_version = "4.2"
 cross_platform = true
 groups = ["default", "dev", "test"]
-content_hash = "sha256:e2c8c7e1f8925a11af8f8dce8d7b5a8bbf478f81ab0976e92fe1e092208cefe3"
+content_hash = "sha256:a5cee7f3483cfea74437fe571f702782de4c4983a16715ba75e86c12278fab93"
 
 [metadata.files]
 "annotated-types 0.5.0" = [
@@ -685,9 +685,9 @@ content_hash = "sha256:e2c8c7e1f8925a11af8f8dce8d7b5a8bbf478f81ab0976e92fe1e0922
     {url = "https://files.pythonhosted.org/packages/f6/0b/e8bacb7d71fa6fea03f4b837be231270e0c715b4fdaf286f749d5fafbc26/ruff-0.0.277.tar.gz", hash = "sha256:2dab13cdedbf3af6d4427c07f47143746b6b95d9e4a254ac369a0edb9280a0d2"},
     {url = "https://files.pythonhosted.org/packages/ff/17/77ddf002d21fafae1e657f330e364f0b435b676ed1d9a191005100749e03/ruff-0.0.277-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:734165ea8feb81b0d53e3bf523adc2413fdb76f1264cde99555161dd5a725522"},
 ]
-"runweb 0.4.0" = [
-    {url = "https://files.pythonhosted.org/packages/58/9d/b72113e5c6c417250117272bc27f6bf167f39501a3c236cf44137fbf9636/runweb-0.4.0.tar.gz", hash = "sha256:64727508171a5daf0a259939a529d572918a7275df38ea9cacc22925a0107b76"},
-    {url = "https://files.pythonhosted.org/packages/af/87/0d32212fb3b0f56890fc9249668168444f044c45f24fdb01a017601f5bfa/runweb-0.4.0-py3-none-any.whl", hash = "sha256:021534b86caf4ac1568a0b9e37f85232899418647a8ebdc8920030d153d6280a"},
+"runweb 0.4.1" = [
+    {url = "https://files.pythonhosted.org/packages/3e/00/5b7adb88f8959566a2b4807ee8d33fa664b5f4361c086365da8c4c7f63fe/runweb-0.4.1.tar.gz", hash = "sha256:5ac34555c64b49c3b0514c7bc2ef025fb1dce46e4f777e6c09e1df3ac4a3e648"},
+    {url = "https://files.pythonhosted.org/packages/6f/a6/08b56fa60df605d10c209195729026a2207e01bf0f75524d1b252664a864/runweb-0.4.1-py3-none-any.whl", hash = "sha256:6ed0aa2103cc793901b838e201c097d3aecda39ad9c0f2a696baa441b7c2f323"},
 ]
 "sniffio 1.3.0" = [
     {url = "https://files.pythonhosted.org/packages/c3/a0/5dba8ed157b0136607c7f2151db695885606968d1fae123dc3391e0cfdbf/sniffio-1.3.0-py3-none-any.whl", hash = "sha256:eecefdce1e5bbfb7ad2eeaabf7c1eeb404d7757c379bd1f7e5cce9d8bf425384"},
