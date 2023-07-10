@@ -1,0 +1,45 @@
+[project]
+name = "localtasks"
+version = "0.1.0"
+description = "Google Cloud Tasks Queue substitute for local"
+authors = [
+    {name = "abersheeran", email = "me@abersheeran.com"},
+]
+dependencies = [
+    "httpx[http2]>=0.24.1",
+    "kui>=1.5.3",
+    "redis>=4.6.0",
+    "pydantic-settings>=2.0.0",
+    "runweb[reload,uvicorn]>=0.4.0",
+    "loguru>=0.7.0",
+]
+requires-python = ">=3.11"
+license = {text = "Apache-2.0"}
+
+[tool.pdm.dev-dependencies]
+test = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "httpx>=0.24.1",
+    "asgi-lifespan>=2.1.0",
+]
+dev = [
+    "ruff>=0.0.277",
+]
+
+[tool.pdm.scripts]
+check = { shell = "ruff check ." }
+lint = { shell = "ruff --fix ." }
+test = { shell = "pytest tests" }
+
+[tool.ruff]
+select = [
+    # Pyflakes
+    "F",
+    # Pycodestyle
+    "E",
+    "W",
+    # isort
+    "I001"
+]
