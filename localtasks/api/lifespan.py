@@ -20,7 +20,7 @@ init_queue, close_queue = asynccontextmanager_lifespan(queue_lifespan)
 async def always_pull_delayed(queue: Queue) -> None:
     while True:
         if not await queue.set_delay_task():
-            # No delayed events, wait a bit.
+            # No delayed tasks, wait a bit.
             await asyncio.sleep(0.5)
 
 

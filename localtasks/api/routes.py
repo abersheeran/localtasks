@@ -51,17 +51,17 @@ class TaskView(HttpView):
         obj = dto.model_dump(exclude_defaults=True)
 
         while True:
-            event = Task.model_validate(obj)
-            if not await queue.push(event, dto.delay_milliseconds):
+            task = Task.model_validate(obj)
+            if not await queue.push(task, dto.delay_milliseconds):
                 if obj.get("id") is None:  # if id is not set, we can retry
                     continue
 
-            return event, 201
+            return task, 201
 
 
 @routes.http.delete("/task/{id}")
 async def delete(
-    id: Annotated[str, Path(..., description="event id")],
+    id: Annotated[str, Path(..., description="task id")],
     queue: Annotated[Queue, Depends(get_queue)],
 ) -> Annotated[tuple[Literal[b""], Literal[204]], JSONResponse[204]]:
     """

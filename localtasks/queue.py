@@ -165,30 +165,30 @@ class Queue:
     def group_name(self) -> str:
         return "workers"
 
-    async def _add_delay_task(self, event: Task, delay_milliseconds: int) -> bool:
+    async def _add_delay_task(self, task: Task, delay_milliseconds: int) -> bool:
         milliseconds = (time.time_ns() // 1000000) + delay_milliseconds
 
         # if not await self.connection.hsetnx(
-        #     event.id,
+        #     task.id,
         #     "json",
-        #     event.model_dump_json(),
+        #     task.model_dump_json(),
         # ):
         #     return False
 
         # return 1 == await self.connection.zadd(
-        #     self.delay_queue_name, {event.id: milliseconds}, nx=True
+        #     self.delay_queue_name, {task.id: milliseconds}, nx=True
         # )
 
         return bool(
             await self._add_delay_task_script(
                 keys=[self.delay_queue_name],
-                args=[event.id, milliseconds, event.model_dump_json()],
+                args=[task.id, milliseconds, task.model_dump_json()],
             )
         )
 
     async def set_delay_task(self) -> bool:
         """
-        Set delay event to stream. Return True if setted.
+        Set delay task to stream. Return True if setted.
         """
         now_milliseconds = time.time_ns() // 1000000
 
@@ -220,28 +220,28 @@ class Queue:
             )
         )
 
-    async def push(self, event: Task, delay_milliseconds: int = 0) -> bool:
+    async def push(self, task: Task, delay_milliseconds: int = 0) -> bool:
         """
-        Push event to queue. Return True if pushed.
+        Push task to queue. Return True if pushed.
         """
         if not delay_milliseconds:
-            logger.debug(f"Pushing event {event} to queue")
+            logger.debug(f"Pushing task {task} to queue")
             return bool(
                 await self._add_no_delay_task_script(
-                    keys=[self.stream_name], args=[event.id, event.model_dump_json()]
+                    keys=[self.stream_name], args=[task.id, task.model_dump_json()]
                 )
             )
         else:
             logger.debug(
-                f"Pushing event {event} to delay queue, {delay_milliseconds}ms"
+                f"Pushing task {task} to delay queue, {delay_milliseconds}ms"
             )
-            return await self._add_delay_task(event, delay_milliseconds)
+            return await self._add_delay_task(task, delay_milliseconds)
 
     async def pull(self, consumer: str) -> tuple[str, Task] | tuple[None, None]:
         """
-        Pull event from queue. Return (message_id, event).
+        Pull task from queue. Return (message_id, task).
         """
-        # pull delay event
+        # pull delay task
         await self.set_delay_task()
 
         res = await self.connection.xreadgroup(
@@ -251,7 +251,7 @@ class Queue:
         logger.debug(f"Pulled as consumer {consumer}: {res}")
 
         if not res:
-            logger.debug("No event to pull.")
+            logger.debug("No task to pull.")
             return None, None
 
         for stream_name, message_list in res:
@@ -260,12 +260,12 @@ class Queue:
                 logger.debug(f"Pulled message: {message_id}, {fields['json']}")
                 return message_id, Task.model_validate_json(fields["json"])
 
-        logger.debug("No event to pull.")
+        logger.debug("No task to pull.")
         return None, None
 
     async def ack(self, message_id: str, task_id: str) -> None:
         """
-        Ack message, then delete it and event.
+        Ack message, then delete it and task.
         """
         # await self.connection.xack(self.stream_name, self.group_name, message_id)
         # await self.connection.xdel(self.stream_name, message_id)
@@ -273,7 +273,7 @@ class Queue:
         await self._ack_script(
             keys=[self.stream_name, self.group_name], args=[message_id, task_id]
         )
-        logger.debug(f"Acked message {message_id} and event {task_id}")
+        logger.debug(f"Acked message {message_id} and task {task_id}")
 
     async def store_latest_error(self, task_id: str, error: str) -> int:
         """
@@ -287,7 +287,7 @@ class Queue:
         self, message_id: str, task_id: str, delay_milliseconds: int
     ) -> None:
         """
-        Retry event, ack and del message.
+        Retry task, ack and del message.
         """
         # await self.connection.xack(self.stream_name, self.group_name, message_id)
         # await self.connection.xdel(self.stream_name, message_id)
@@ -304,12 +304,12 @@ class Queue:
             ],
         )
         logger.debug(
-            f"Retried message {message_id} and event {task_id}, {delay_milliseconds}ms"
+            f"Retried message {message_id} and task {task_id}, {delay_milliseconds}ms"
         )
 
     async def delete(self, task_id: str) -> None:
         """
-        Delete event that not in pending.
+        Delete task that not in pending.
         """
         # message_id: str | None = await self.connection.hget(task_id, "message_id")
         # if message_id:
@@ -325,7 +325,7 @@ class Queue:
         self, consumer: str, min_idle_time: int
     ) -> list[tuple[str, Task]]:
         """
-        Auto claim events.
+        Auto claim tasks.
         """
         logger.debug(f"Auto claim as consumer {consumer}")
         res = await self.connection.xautoclaim(
