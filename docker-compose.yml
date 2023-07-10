@@ -4,7 +4,7 @@ services:
   localtasks-api:
     image: ghcr.io/abersheeran/localtasks:main
     ports:
-      - "9998:80"
+      - "127.0.0.1:9998:80"
     environment:
       - REDIS=redis://redis:6379/0
     depends_on:
