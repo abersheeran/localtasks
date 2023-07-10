@@ -1,0 +1,24 @@
+version: "3"
+
+services:
+  localtasks-api:
+    image: ghcr.io/abersheeran/localtasks:main
+    ports:
+      - "9998:80"
+    environment:
+      - REDIS=redis://redis:6379/0
+    depends_on:
+      - redis
+
+  localtasks-workers:
+    image: ghcr.io/abersheeran/localtasks:main
+    command: python -m localtasks.worker
+    environment:
+      - REDIS=redis://redis:6379/0
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - ./redis-data:/data
