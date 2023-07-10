@@ -16,8 +16,9 @@ async def fetch(
     """
     Send request to url.
     """
+    task_info = f"{task.id} {task.method} {task.url}"
     try:
-        logger.info(f"{task.method} {task.url} {task.headers}")
+        logger.info(task_info)
         response = await client.request(
             task.method,
             task.url,
@@ -27,19 +28,16 @@ async def fetch(
         )
         response.raise_for_status()
         await queue.ack(message_id, task.id)
-        logger.info(
-            f"{task.method} {task.url} {task.headers} {response.status_code}"
-        )
+        cast_time = response.elapsed.total_seconds()
+        logger.info(f"{task_info} {response.status_code} cast {cast_time}s")
         return
     except httpx.HTTPError as exc:
         err_message = str(exc)
-        logger.error(f"{task.method} {task.url} {task.headers} {err_message}")
+        logger.error(f"{task_info} {err_message}")
         max_retries = settings.retry.max_retries
         err_count = await queue.store_latest_error(task.id, err_message)
         if max_retries is not None and (max_retries <= err_count):
-            logger.warning(
-                f"{task.method} {task.url} {task.headers} max retries reached"
-            )
+            logger.warning(f"{task_info} max retries reached")
             return await queue.ack(message_id, task.id)
 
         delay_seconds = min(

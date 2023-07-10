@@ -232,9 +232,7 @@ class Queue:
                 )
             )
         else:
-            logger.debug(
-                f"Pushing task {task} to delay queue, {delay_milliseconds}ms"
-            )
+            logger.debug(f"Pushing task {task} to delay queue, {delay_milliseconds}ms")
             return await self._add_delay_task(task, delay_milliseconds)
 
     async def pull(self, consumer: str) -> tuple[str, Task] | tuple[None, None]:
@@ -257,7 +255,6 @@ class Queue:
         for stream_name, message_list in res:
             for msg in message_list:
                 message_id, fields = msg
-                logger.debug(f"Pulled message: {message_id}, {fields['json']}")
                 return message_id, Task.model_validate_json(fields["json"])
 
         logger.debug("No task to pull.")
