@@ -15,7 +15,13 @@ local task_id = ARGV[2]
 
 redis.call('XACK', stream_name, group_name, message_id)
 redis.call('XDEL', stream_name, message_id)
-redis.call('DEL', task_id)
+
+local interval_milliseconds = tonumber(redis.call('HGET', task_id, 'interval')) or 0
+if interval_milliseconds > 0 then
+    redis.call('HDEL', task_id, 'message_id', 'latest_error', 'error_count')
+else
+    redis.call('DEL', task_id)
+end
 """
 
 RETRY_SCRIPT = """
@@ -50,14 +56,16 @@ local delay_queue_name = KEYS[1]
 local key = ARGV[1]
 local milliseconds = tonumber(ARGV[2])
 local task_json = ARGV[3]
+local interval_milliseconds = tonumber(ARGV[4])
 
 local res = redis.call('HSETNX', key, 'json', task_json)
 if res == 0 then
     return 0
 end
 
-redis.call('ZADD', delay_queue_name, 'NX', milliseconds, key)
-return 1
+redis.call('HSET', key, 'interval', interval_milliseconds)
+
+return redis.call('ZADD', delay_queue_name, 'NX', milliseconds, key)
 """
 
 SET_DELAY_SCRIPT = """
@@ -83,6 +91,11 @@ local task_json = redis.call('HGET', task_id, 'json')
 -- What's the fuck? boolean???
 if (type(task_json) == "boolean" and not task_json) or task_json == nil then
     return nil
+end
+
+local interval_milliseconds = tonumber(redis.call('HGET', task_id, 'interval')) or 0
+if interval_milliseconds > 0 then
+    redis.call('ZADD', delay_queue_name, milliseconds + interval_milliseconds, task_id)
 end
 
 local message_id = redis.call('XADD', stream_name, '*', 'json', task_json)
@@ -165,7 +178,9 @@ class Queue:
     def group_name(self) -> str:
         return "workers"
 
-    async def _add_delay_task(self, task: Task, delay_milliseconds: int) -> bool:
+    async def _add_delay_task(
+        self, task: Task, delay_milliseconds: int, interval_milliseconds: int
+    ) -> bool:
         milliseconds = (time.time_ns() // 1000000) + delay_milliseconds
 
         # if not await self.connection.hsetnx(
@@ -175,6 +190,8 @@ class Queue:
         # ):
         #     return False
 
+        # await self.connection.hset(task.id, "interval", interval_milliseconds)
+
         # return 1 == await self.connection.zadd(
         #     self.delay_queue_name, {task.id: milliseconds}, nx=True
         # )
@@ -182,7 +199,12 @@ class Queue:
         return bool(
             await self._add_delay_task_script(
                 keys=[self.delay_queue_name],
-                args=[task.id, milliseconds, task.model_dump_json()],
+                args=[
+                    task.id,
+                    milliseconds,
+                    task.model_dump_json(),
+                    interval_milliseconds,
+                ],
             )
         )
 
@@ -210,7 +232,21 @@ class Queue:
         # if not task_json:
         #     return False
 
-        # await self.connection.xadd(self.stream_name, {"json": task_json})
+        # interval_milliseconds = int(
+        #     await self.connection.hget(task_id, "interval") or 0
+        # )
+        # if interval_milliseconds > 0:
+        #     await self.connection.zadd(
+        #         self.delay_queue_name,
+        #         {task_id: now_milliseconds + interval_milliseconds},
+        #     )
+
+        # message_id = await self.connection.xadd(self.stream_name, {"json": task_json})
+        # if not message_id:
+        #     return False
+
+        # await self.connection.hset(task_id, "message_id", message_id)
+
         # return True
 
         return bool(
@@ -220,11 +256,13 @@ class Queue:
             )
         )
 
-    async def push(self, task: Task, delay_milliseconds: int = 0) -> bool:
+    async def push(
+        self, task: Task, delay_milliseconds: int = 0, interval_milliseconds: int = 0
+    ) -> bool:
         """
         Push task to queue. Return True if pushed.
         """
-        if not delay_milliseconds:
+        if not delay_milliseconds and not interval_milliseconds:
             logger.debug(f"Pushing task {task} to queue")
             return bool(
                 await self._add_no_delay_task_script(
@@ -232,8 +270,13 @@ class Queue:
                 )
             )
         else:
-            logger.debug(f"Pushing task {task} to delay queue, {delay_milliseconds}ms")
-            return await self._add_delay_task(task, delay_milliseconds)
+            logger.debug(
+                f"Pushing task {task} to delay queue,"
+                f" delay {delay_milliseconds}ms, interval {interval_milliseconds}ms"
+            )
+            return await self._add_delay_task(
+                task, delay_milliseconds, interval_milliseconds
+            )
 
     async def pull(self, consumer: str) -> tuple[str, Task] | tuple[None, None]:
         """
@@ -266,7 +309,13 @@ class Queue:
         """
         # await self.connection.xack(self.stream_name, self.group_name, message_id)
         # await self.connection.xdel(self.stream_name, message_id)
-        # await self.connection.delete(task_id)
+        # if int(await self.connection.hget(task_id, "interval") or 0) > 0:
+        #     await self.connection.hdel(
+        #         task_id, "message_id", "latest_error", "error_count"
+        #     )
+        # else:
+        #     await self.connection.delete(task_id)
+
         await self._ack_script(
             keys=[self.stream_name, self.group_name], args=[message_id, task_id]
         )

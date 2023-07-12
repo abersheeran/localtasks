@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 import pytest_asyncio
 
@@ -68,3 +70,29 @@ async def test_pull_and_ack_task(queue: Queue):
     await queue.ack(message_id, task.id)
     assert (await queue.pending)["pending"] == 0
     assert await queue.range_todo("-", 1) == ("-", [])
+
+
+@pytest.mark.asyncio
+async def test_interval_task(queue: Queue):
+    task = Task(
+        id="task_id",
+        url="https://aber.sh",
+        method="GET",
+        headers={"User-Agent": "localtasks"},
+        payload=b"",
+    )
+    assert await queue.push(task, 0, 10)
+    message_id, pulled_task = await queue.pull("test")
+    assert message_id is not None and task is not None
+    assert pulled_task == task
+    assert (await queue.pending)["pending"] == 1
+    assert len((await queue.range_delay(0, 1))[1]) == 1
+
+    # wait for task to be ready
+    await asyncio.sleep(0.011)
+
+    message_id, pulled_task = await queue.pull("test")
+    assert message_id is not None and task is not None
+    assert pulled_task == task
+    assert (await queue.pending)["pending"] == 2
+    assert len((await queue.range_delay(0, 1))[1]) == 1
