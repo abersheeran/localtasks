@@ -56,8 +56,7 @@ if res == 0 then
     return 0
 end
 
-redis.call('ZADD', delay_queue_name, 'NX', milliseconds, key)
-return 1
+return redis.call('ZADD', delay_queue_name, 'NX', milliseconds, key)
 """
 
 SET_DELAY_SCRIPT = """
@@ -210,7 +209,12 @@ class Queue:
         # if not task_json:
         #     return False
 
-        # await self.connection.xadd(self.stream_name, {"json": task_json})
+        # message_id = await self.connection.xadd(self.stream_name, {"json": task_json})
+        # if not message_id:
+        #     return False
+
+        # await self.connection.hset(task_id, "message_id", message_id)
+
         # return True
 
         return bool(
