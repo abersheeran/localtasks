@@ -11,12 +11,18 @@ from kui.asgi import (
 )
 
 from localtasks.queue import Queue
+from localtasks.settings import settings
 from localtasks.task import Task
 
 from .dependencies import get_queue
 from .schemas import CreateTaskDto, ListTaskEntity
 
 routes = Routes()
+
+if settings.api_token is not None:
+    from .middlewares import api_auth
+
+    routes.http_middleware(api_auth)
 
 
 @routes.http("/task")

@@ -29,6 +29,8 @@ class Settings(BaseSettings):
 
     redis_dsn: str = Field("redis://localhost:6379/0", alias="REDIS")
 
+    api_token: str | None = Field(None, alias="API_TOKEN")
+
     consumer_name: str = Field(
         default_factory=lambda: uuid.uuid4().hex, alias="CONSUMER_NAME"
     )
