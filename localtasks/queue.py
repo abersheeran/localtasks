@@ -164,27 +164,6 @@ class Queue:
     def group_name(self) -> str:
         return "workers"
 
-    async def _add_delay_task(self, task: Task, delay_milliseconds: int) -> bool:
-        milliseconds = (time.time_ns() // 1000000) + delay_milliseconds
-
-        # if not await self.connection.hsetnx(
-        #     task.id,
-        #     "json",
-        #     task.model_dump_json(),
-        # ):
-        #     return False
-
-        # return 1 == await self.connection.zadd(
-        #     self.delay_queue_name, {task.id: milliseconds}, nx=True
-        # )
-
-        return bool(
-            await self._add_delay_task_script(
-                keys=[self.delay_queue_name],
-                args=[task.id, milliseconds, task.model_dump_json()],
-            )
-        )
-
     async def set_delay_task(self) -> bool:
         """
         Set delay task to stream. Return True if setted.
@@ -237,7 +216,25 @@ class Queue:
             )
         else:
             logger.debug(f"Pushing task {task} to delay queue, {delay_milliseconds}ms")
-            return await self._add_delay_task(task, delay_milliseconds)
+            milliseconds = (time.time_ns() // 1000000) + delay_milliseconds
+
+            # if not await self.connection.hsetnx(
+            #     task.id,
+            #     "json",
+            #     task.model_dump_json(),
+            # ):
+            #     return False
+
+            # return 1 == await self.connection.zadd(
+            #     self.delay_queue_name, {task.id: milliseconds}, nx=True
+            # )
+
+            return bool(
+                await self._add_delay_task_script(
+                    keys=[self.delay_queue_name],
+                    args=[task.id, milliseconds, task.model_dump_json()],
+                )
+            )
 
     async def pull(self, consumer: str) -> tuple[str, Task] | tuple[None, None]:
         """
