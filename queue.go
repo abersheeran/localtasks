@@ -204,7 +204,7 @@ type PullResult struct {
 	Task      *Task
 }
 
-func (queue *Queue) Pull(ctx context.Context, consumer string) PullResult {
+func (queue *Queue) Pull(ctx context.Context, consumer string) *PullResult {
 	queue.SetDelayTask(ctx)
 
 	res := queue.redis.XReadGroup(ctx, &redis.XReadGroupArgs{
@@ -215,20 +215,20 @@ func (queue *Queue) Pull(ctx context.Context, consumer string) PullResult {
 	}).Val()
 
 	if len(res) == 0 {
-		return PullResult{}
+		return nil
 	}
 
 	for _, xstream := range res {
 		for _, message := range xstream.Messages {
 			task_json := message.Values["json"].(string)
-			return PullResult{
+			return &PullResult{
 				MessageId: message.ID,
 				Task:      (&Task{}).FromJson(task_json),
 			}
 		}
 	}
 
-	return PullResult{}
+	return nil
 }
 
 func (queue *Queue) Ack(ctx context.Context, message_id string, task_id string) {
@@ -237,10 +237,10 @@ func (queue *Queue) Ack(ctx context.Context, message_id string, task_id string) 
 	queue.ack_task_script.Run(ctx, queue.redis, keys, args).Result()
 }
 
-func (queue *Queue) StoreLatestError(ctx context.Context, task_id string, err string) int64 {
+func (queue *Queue) StoreLatestError(ctx context.Context, task_id string, err string) int {
 	keys := []string{task_id}
 	args := []interface{}{err}
-	res, _ := queue.store_latest_error_script.Run(ctx, queue.redis, keys, args).Int64()
+	res, _ := queue.store_latest_error_script.Run(ctx, queue.redis, keys, args).Int()
 	return res
 }
 
