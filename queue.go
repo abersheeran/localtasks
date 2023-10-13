@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+
+	. "github.com/abersheeran/rgo-error"
 )
 
 type Queue struct {
@@ -180,23 +182,26 @@ func NewQueue(redis_dsn string) *Queue {
 	}
 }
 
-func (queue *Queue) Push(ctx context.Context, task *Task, delay_milliseconds int64) (bool, error) {
+func (queue *Queue) Push(ctx context.Context, task *Task, delay_milliseconds int64) *Result[bool] {
 	if delay_milliseconds == 0 {
 		keys := []string{queue.stream_name}
-		args := []interface{}{task.ID, task.Json()}
-		return queue.add_no_delay_task_script.Run(ctx, queue.redis, keys, args).Bool()
+		args := []any{task.ID, task.Json()}
+		res := AsResult[bool](queue.add_no_delay_task_script.Run(ctx, queue.redis, keys, args).Bool())
+		return &res
 	} else {
 		milliseconds := time.Now().UnixMilli() + delay_milliseconds
 		keys := []string{queue.delay_queue_name}
-		args := []interface{}{task.ID, milliseconds, task.Json()}
-		return queue.add_delay_task_script.Run(ctx, queue.redis, keys, args).Bool()
+		args := []any{task.ID, milliseconds, task.Json()}
+		res := AsResult[bool](queue.add_delay_task_script.Run(ctx, queue.redis, keys, args).Bool())
+		return &res
 	}
 }
 
-func (queue *Queue) SetDelayTask(ctx context.Context) (bool, error) {
+func (queue *Queue) SetDelayTask(ctx context.Context) *Result[bool] {
 	keys := []string{queue.delay_queue_name, queue.stream_name}
-	args := []interface{}{time.Now().UnixMilli()}
-	return queue.set_delay_task_script.Run(ctx, queue.redis, keys, args).Bool()
+	args := []any{time.Now().UnixMilli()}
+	res := AsResult[bool](queue.set_delay_task_script.Run(ctx, queue.redis, keys, args).Bool())
+	return &res
 }
 
 type PullResult struct {
@@ -231,29 +236,32 @@ func (queue *Queue) Pull(ctx context.Context, consumer string) *PullResult {
 	return nil
 }
 
-func (queue *Queue) Ack(ctx context.Context, message_id string, task_id string) {
+func (queue *Queue) Ack(ctx context.Context, message_id string, task_id string) *Result[any] {
 	keys := []string{queue.stream_name, queue.group_name}
-	args := []interface{}{message_id, task_id}
-	queue.ack_task_script.Run(ctx, queue.redis, keys, args).Result()
+	args := []any{message_id, task_id}
+	res := AsResult[any](queue.ack_task_script.Run(ctx, queue.redis, keys, args).Result())
+	return &res
 }
 
-func (queue *Queue) StoreLatestError(ctx context.Context, task_id string, err string) int {
+func (queue *Queue) StoreLatestError(ctx context.Context, task_id string, err string) *Result[int] {
 	keys := []string{task_id}
-	args := []interface{}{err}
-	res, _ := queue.store_latest_error_script.Run(ctx, queue.redis, keys, args).Int()
-	return res
+	args := []any{err}
+	res := AsResult[int](queue.store_latest_error_script.Run(ctx, queue.redis, keys, args).Int())
+	return &res
 }
 
-func (queue *Queue) Retry(ctx context.Context, message_id string, task_id string, delay_milliseconds int64) {
+func (queue *Queue) Retry(ctx context.Context, message_id string, task_id string, delay_milliseconds int64) *Result[any] {
 	keys := []string{queue.stream_name, queue.group_name, queue.delay_queue_name}
-	args := []interface{}{message_id, task_id, time.Now().UnixMilli() + delay_milliseconds}
-	queue.retry_task_script.Run(ctx, queue.redis, keys, args).Result()
+	args := []any{message_id, task_id, time.Now().UnixMilli() + delay_milliseconds}
+	res := AsResult[any](queue.retry_task_script.Run(ctx, queue.redis, keys, args).Result())
+	return &res
 }
 
-func (queue *Queue) Delete(ctx context.Context, task_id string) {
+func (queue *Queue) Delete(ctx context.Context, task_id string) *Result[any] {
 	keys := []string{queue.stream_name, queue.delay_queue_name}
-	args := []interface{}{task_id}
-	queue.delete_task_script.Run(ctx, queue.redis, keys, args).Result()
+	args := []any{task_id}
+	res := AsResult[any](queue.delete_task_script.Run(ctx, queue.redis, keys, args).Result())
+	return &res
 }
 
 func (queue *Queue) Autoclaim(ctx context.Context, consumer string, min_idle_time int64) []PullResult {
@@ -276,15 +284,18 @@ func (queue *Queue) Autoclaim(ctx context.Context, consumer string, min_idle_tim
 	return results
 }
 
-func (queue *Queue) Pending(ctx context.Context) struct {
+func (queue *Queue) Pending(ctx context.Context) (res *Result[struct {
 	Count     int64
 	Lower     string
 	Higher    string
 	Consumers map[string]int64
-} {
+}]) {
 	pending_info, err := queue.redis.XPending(ctx, queue.stream_name, queue.group_name).Result()
 	if err != nil {
-		panic(err)
+		res := res.Err(err.Error())
+		return &res
+	} else {
+		res := res.Ok(*pending_info)
+		return &res
 	}
-	return *pending_info
 }

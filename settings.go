@@ -1,7 +1,6 @@
 package localtasks
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/caarlos0/env/v9"
@@ -37,7 +36,7 @@ type Settings struct {
 func newSettings() *Settings {
 	settings := Settings{}
 	if err := env.Parse(&settings); err != nil {
-		fmt.Printf("%+v\n", err)
+		panic(err)
 	}
 	if (settings.ConsumerName) == "" {
 		settings.ConsumerName = uuid.New().String()

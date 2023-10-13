@@ -1,7 +1,6 @@
 package main
 
 import (
-	. "abersheeran/localtasks"
 	"bytes"
 	"context"
 	"fmt"
@@ -9,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	. "abersheeran/localtasks"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -20,7 +21,7 @@ func fetch(ctx context.Context, queue *Queue, client *http.Client, message_id st
 	request, err := http.NewRequest(task.Method, task.Url, bytes.NewReader(task.Payload))
 	if err != nil {
 		log.Error("Failed to create request for task: " + task_info)
-		queue.StoreLatestError(ctx, message_id, err.Error())
+		queue.StoreLatestError(ctx, message_id, err.Error()).Unwrap()
 		return
 	}
 	for key, value := range task.Headers {
@@ -33,7 +34,7 @@ func fetch(ctx context.Context, queue *Queue, client *http.Client, message_id st
 	if err == nil {
 		defer response.Body.Close()
 		if response.StatusCode >= 200 && response.StatusCode < 300 {
-			queue.Ack(ctx, message_id, task.ID)
+			queue.Ack(ctx, message_id, task.ID).Unwrap()
 			log.Info(
 				fmt.Sprint("Task ", task_info, " ",
 					response.StatusCode, " cast ", elapsed_total_second, "s"),
@@ -46,18 +47,25 @@ func fetch(ctx context.Context, queue *Queue, client *http.Client, message_id st
 		err_message = err.Error()
 	}
 	log.Error("Failed to run task: " + task_info + " " + err_message)
-	err_count := queue.StoreLatestError(ctx, message_id, err_message)
+	err_count := queue.StoreLatestError(ctx, message_id, err_message).Unwrap()
 	if settings.Retry.MaxRetries <= err_count {
 		log.Warning("Task " + task_info + " max retries reached")
-		queue.Ack(ctx, message_id, task.ID)
+		queue.Ack(ctx, message_id, task.ID).Unwrap()
 		return
 	}
 
-	delay_seconds := min(
-		float64(settings.Retry.MinInterval)*(math.Pow(2, float64(min(err_count, settings.Retry.MaxRetries)))),
+	var retry_times int
+	if err_count > settings.Retry.MaxDoubling {
+		retry_times = settings.Retry.MaxDoubling
+	} else {
+		retry_times = err_count
+	}
+
+	delay_seconds := math.Min(
+		float64(settings.Retry.MinInterval)*(math.Pow(2, float64(retry_times))),
 		float64(settings.Retry.MaxInterval),
 	)
-	queue.Retry(ctx, message_id, task.ID, int64(delay_seconds*1000))
+	queue.Retry(ctx, message_id, task.ID, int64(delay_seconds*1000)).Unwrap()
 }
 
 func main() {
@@ -72,7 +80,7 @@ func main() {
 			go fetch(ctx, queue, client, message.MessageId, message.Task)
 		}
 
-		pending := queue.Pending(ctx)
+		pending := queue.Pending(ctx).Unwrap()
 		if pending.Count >= int64(settings.SpeedLimit.MaxConcurrent) {
 			time.Sleep(200 * time.Millisecond)
 		}
