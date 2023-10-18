@@ -3,7 +3,7 @@ module abersheeran/localtasks
 go 1.21
 
 require (
-	github.com/abersheeran/rgo-error v0.0.0-20231015031654-0740c0138c10 // indirect
+	github.com/abersheeran/rgo-error v1.0.0 // indirect
 	github.com/bytedance/sonic v1.10.0-rc2 // indirect
 	github.com/caarlos0/env/v9 v9.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect

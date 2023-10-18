@@ -62,8 +62,8 @@ func fetch(ctx context.Context, queue *Queue, client *http.Client, message_id st
 	}
 
 	delay_seconds := math.Min(
-		float64(settings.Retry.MinInterval)*(math.Pow(2, float64(retry_times))),
-		float64(settings.Retry.MaxInterval),
+		settings.Retry.MinInterval*(math.Pow(2, float64(retry_times))),
+		settings.Retry.MaxInterval,
 	)
 	queue.Retry(ctx, message_id, task.ID, int64(delay_seconds*1000)).Unwrap()
 }

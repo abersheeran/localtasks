@@ -12,10 +12,10 @@ type SpeedLimit struct {
 }
 
 type Retry struct {
-	Timeout     float32 `env:"TIMEOUT" envDefault:"1800"`
+	Timeout     float64 `env:"TIMEOUT" envDefault:"1800"`
 	MaxRetries  int     `env:"MAX_RETRIES" envDefault:"0"`
-	MinInterval float32 `env:"MIN_INTERVAL" envDefault:"0.1"`
-	MaxInterval float32 `env:"MAX_INTERVAL" envDefault:"3600"`
+	MinInterval float64 `env:"MIN_INTERVAL" envDefault:"0.1"`
+	MaxInterval float64 `env:"MAX_INTERVAL" envDefault:"3600"`
 	MaxDoubling int     `env:"MAX_DOUBLING" envDefault:"16"`
 }
 
