@@ -8,6 +8,8 @@ Google Cloud Tasks Queue substitute in local
 - **Scalable**: You can deploy multiple Workers to handle more tasks.
 - **Multifunction**: Not only supports real-time tasks, but also supports delayed tasks.
 
+![截图20231023152110](https://github.com/abersheeran/localtasks/assets/25364828/806a2a98-2bf6-4d7f-8d83-53b933665b8b)
+
 ## Quick Start
 
 Download [docker-compose.yml](https://github.com/abersheeran/localtasks/blob/main/docker-compose.yml), then run `docker-compose up -d`.
